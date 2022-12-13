@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 
@@ -59,20 +60,46 @@ def log_initialization():
     logging.basicConfig(filename=log_file_path, level=logging.INFO)
 
 
+def get_parameters() -> dict:
+    parameter_file = os.path.dirname(__file__) + '\\parameters.json'
+    if not os.path.exists(parameter_file):
+        logging.error(f'File \"parameters.json\" not found in directory {os.path.dirname(__file__)}')
+        exit()
+
+    with open(parameter_file) as parameter_file:
+        return json.load(parameter_file)
+
+
+def valid_parameter_file(parameters: dict) -> bool:
+    if not list(parameters.keys())[0] == 'directories':
+        logging.error('Error: Parameter \"directories\" not found')
+        exit()
+
+    parameter_order = 0
+    for parameter in parameters['directories']:
+        parameter_order += 1
+        if not 'path' in parameter:
+            logging.error(f'Error: Parameter \"path\" not found. Parameter {parameter_order}.')
+            exit()
+        if not 'remove_by_age' in parameter:
+            logging.error(f'Error: Parameter \"remove_bay_age\" not found. Parameter {parameter_order}.')
+            exit()
+
+    return True
+
+
 def main():
     log_initialization()
-    # empty_directory deletes all files in a directory and the directory itself if it is empty after remove all files
-    # Parameters:
-    #       path_to_be_clean = Str
-    #       remove_file_by_age = Bool -> Default: True (delete files older than 1 day).
-    empty_directory('C:\\lixo\\', False)
 
-    # remove_files_by_extension delete all files (only the files)  of a certain extension
-    # .Paraeters:
-    #       directory = Str -> the main diectory you want to clean.
-    #       file_extension = Str -> the file type you want to delete (txt, log, ...)
-    #       remove_file_by_age = Bool -> Default: True (delete files older than 1 day).
-    remove_files_by_extension('D:\\TEX\\MOL\\', 'log', False)
+    parameters = get_parameters()
+    if not valid_parameter_file(parameters):
+        exit()
+
+    for parameter in parameters['directories']:
+        if 'file_extension' in parameter:
+            remove_files_by_extension(parameter['path'], parameter['file_extension'], parameter['remove_by_age'])
+        else:
+            empty_directory(parameter['path'], parameter['remove_by_age'])
 
 
 if __name__ == "__main__":
